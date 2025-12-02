@@ -2,65 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
-// --------------------------------------------------------------------------
-// 1. THE MODEL
-// Defines what a 'Task' looks like and how to convert it to/from JSON
-// --------------------------------------------------------------------------
+
 class Task {
   String title;
   bool isDone;
 
   Task({required this.title, this.isDone = false});
 
-  // Convert a Task object to a Map (JSON) for storage
+
   Map<String, dynamic> toJson() => {
         'title': title,
         'isDone': isDone,
       };
 
-  // Create a Task object from a Map (JSON)
   factory Task.fromJson(Map<String, dynamic> json) => Task(
         title: json['title'],
         isDone: json['isDone'] ?? false,
       );
 }
 
-// --------------------------------------------------------------------------
-// 2. THE CONTROLLER
-// Handles the logic: Loading, Adding, Updating, and Saving data
-// --------------------------------------------------------------------------
 class TaskController extends GetxController {
-  // The list of tasks, observed by GetX (.obs makes it reactive)
   var tasks = <Task>[].obs;
-  
-  // Instance of GetStorage
+
   final box = GetStorage();
 
   @override
   void onInit() {
     super.onInit();
-    // Retrieve data when the app starts
     List? storedTasks = box.read<List>('tasks');
     
     if (storedTasks != null) {
-      // Convert the raw JSON list back into Task objects
       tasks.assignAll(storedTasks.map((e) => Task.fromJson(e)).toList());
     }
   }
 
-  // Helper method to save current list to storage
   void saveData() {
     box.write('tasks', tasks.map((e) => e.toJson()).toList());
   }
 
   void addTask(String title) {
     tasks.add(Task(title: title));
-    saveData(); // Save to storage immediately
+    saveData();
   }
 
   void updateTask(int index, String newTitle) {
     tasks[index].title = newTitle;
-    tasks.refresh(); // Notify UI of deep change
+    tasks.refresh();
     saveData();
   }
 
@@ -76,15 +63,9 @@ class TaskController extends GetxController {
   }
 }
 
-// --------------------------------------------------------------------------
-// 3. THE VIEW (UI)
-// The visual interface of the app
-// --------------------------------------------------------------------------
 void main() async {
-  // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize GetStorage before running the app
+
   await GetStorage.init();
   
   runApp(const MyApp());
@@ -108,15 +89,11 @@ class MyApp extends StatelessWidget {
 }
 
 class TodoScreen extends StatelessWidget {
-  // Inject the controller
   final TaskController controller = Get.put(TaskController());
   final TextEditingController textEditingController = TextEditingController();
-
   TodoScreen({super.key});
 
-  // Helper function to show Add/Edit Dialog
   void showTaskDialog(BuildContext context, {int? index}) {
-    // If index is provided, we are editing, so pre-fill the text
     if (index != null) {
       textEditingController.text = controller.tasks[index].title;
     } else {
@@ -138,13 +115,11 @@ class TodoScreen extends StatelessWidget {
       onConfirm: () {
         if (textEditingController.text.isNotEmpty) {
           if (index == null) {
-            // Add Mode
             controller.addTask(textEditingController.text);
           } else {
-            // Edit Mode
             controller.updateTask(index, textEditingController.text);
           }
-          Get.back(); // Close dialog
+          Get.back();
         }
       },
     );
@@ -159,7 +134,6 @@ class TodoScreen extends StatelessWidget {
         backgroundColor: Colors.blueAccent,
         foregroundColor: Colors.white,
       ),
-      // Obx is a widget that listens to the controller's observables
       body: Obx(() {
         if (controller.tasks.isEmpty) {
           return const Center(
@@ -197,12 +171,10 @@ class TodoScreen extends StatelessWidget {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Edit Button
                     IconButton(
                       icon: const Icon(Icons.edit, color: Colors.blue),
                       onPressed: () => showTaskDialog(context, index: index),
                     ),
-                    // Delete Button
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () => controller.deleteTask(index),
