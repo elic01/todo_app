@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import '../blocs/task_bloc.dart';
 import '../blocs/task_event.dart';
@@ -11,12 +12,13 @@ import '../widgets/task_dialog.dart';
 class TodoScreen extends StatelessWidget {
   const TodoScreen({super.key});
 
-  void _showTaskDialog(BuildContext context, {int? index, String? currentTitle}) {
+  void _showTaskDialog(BuildContext context, {int? id, String? currentTitle, DateTime? currentDeadline}) {
     showDialog(
       context: context,
       builder: (context) => TaskDialog(
-        index: index,
+        id: id,
         currentTitle: currentTitle,
+        currentDeadline: currentDeadline,
       ),
     );
   }
@@ -87,10 +89,6 @@ class TodoScreen extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       itemBuilder: (context, index) {
         final task = tasks[index];
-        // Find the original index of the task in the main list
-        final originalIndex = (context.read<TaskBloc>().state as TaskLoadSuccess)
-            .tasks
-            .indexOf(task);
 
         return Card(
           elevation: 2,
@@ -99,7 +97,7 @@ class TodoScreen extends StatelessWidget {
             leading: Checkbox(
               value: task.isDone,
               onChanged: (val) =>
-                  context.read<TaskBloc>().add(ToggleTask(originalIndex)),
+                  context.read<TaskBloc>().add(ToggleTask(task.id)),
             ),
             title: Text(
               task.title,
@@ -110,6 +108,9 @@ class TodoScreen extends StatelessWidget {
                 color: task.isDone ? hintTextColor : secondaryTextColor,
               ),
             ),
+            subtitle: task.deadline != null
+                ? Text('Deadline: ${DateFormat.yMd().format(task.deadline!)}')
+                : null,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -117,14 +118,15 @@ class TodoScreen extends StatelessWidget {
                   icon: const Icon(Icons.edit, color: primaryColor),
                   onPressed: () => _showTaskDialog(
                     context,
-                    index: originalIndex,
+                    id: task.id,
                     currentTitle: task.title,
+                    currentDeadline: task.deadline,
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: errorColor),
                   onPressed: () =>
-                      context.read<TaskBloc>().add(DeleteTask(originalIndex)),
+                      context.read<TaskBloc>().add(DeleteTask(task.id)),
                 ),
               ],
             ),
